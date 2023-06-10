@@ -15,7 +15,8 @@ public class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public DocumentParse Post([FromForm] DocumentParse form)
+    [Route("[action]")]
+    public DocumentParse Xml([FromForm] DocumentParse form)
     {
         return form;
         // return new DocumentParse

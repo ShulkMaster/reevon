@@ -1,4 +1,8 @@
-var builder = WebApplication.CreateBuilder(args);
+using Reevon.Api.Setup;
+
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+IServiceCollection services = builder.Services;
+services.SetUpSwagger();
 
 // Add services to the container.
 
@@ -14,11 +18,12 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
+app.EnableSwagger();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller}/{action=Index}/{id?}");
+    pattern: "{controller}/{action=Index}/{id?}"
+);
 
 app.MapFallbackToFile("index.html");
 
