@@ -16,7 +16,7 @@ public class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult  Xml([FromForm] DocumentParse form)
+    public IActionResult Xml([FromForm] DocumentParse form)
     {
         string xmlContent = @$"
 <root>
