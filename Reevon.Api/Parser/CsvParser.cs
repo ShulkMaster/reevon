@@ -28,12 +28,12 @@ public class CsvParser
     private bool HasHeaders()
     {
         string value = _reader.Current?[0] ?? "";
-        return Client.Columns.Any(column => string.Compare(value, column) == 0);
+        return Client.Columns.Any(column => IsSame(value, column));
     }
 
     private static bool IsSame(string value, string column)
     {
-        return string.Compare(value, column, StringComparison.CurrentCultureIgnoreCase) == 0;
+        return string.Equals(value, column, StringComparison.InvariantCultureIgnoreCase);
     }
 
     private bool PrepareHeaders()
@@ -42,7 +42,7 @@ public class CsvParser
         if (!HasHeaders()) return true;
         for (int index = 0; index < _reader.Current.Count; index++)
         {
-            string headName = _reader.Current[index].Trim().ToLower();
+            string headName = _reader.Current[index].Trim();
             string? header = Client.Columns.FirstOrDefault(column => IsSame(headName, column));
             if (header == null || newMap.ContainsKey(header)) return false;
             newMap.Add(header, index);

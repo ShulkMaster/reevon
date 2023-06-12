@@ -66,7 +66,7 @@ public class DocumentController : ControllerBase
             age = 30,
             separator = form.Separator,
             key = form.Key,
-            file = form.Document?.FileName
+            file = form.Document.FileName
         };
         return Ok(jsonContent);
     }
