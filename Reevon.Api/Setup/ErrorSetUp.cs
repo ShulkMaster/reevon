@@ -28,7 +28,7 @@ public static class ErrorSetUp
             if (context.ModelState[key].Errors.Count < 1) continue;
             ModelErrorCollection errors = context.ModelState[key]!.Errors;
             var errorMessages = errors.Select(x => x.ErrorMessage);
-            error.ValidationErrors.Add(key, errorMessages);
+            error.ValidationErrors.Add(key, errorMessages.ToList());
         }
         return new BadRequestObjectResult(error);
     }

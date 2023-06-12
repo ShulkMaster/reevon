@@ -1,12 +1,10 @@
-using FluentValidation;
 using Reevon.Api.Setup;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 IServiceCollection services = builder.Services;
 services.SetUpSwagger();
-services.AddControllersWithViews().SetUpErrors();
-services.AddValidatorsFromAssembly(typeof(Program).Assembly);
-
+services.AddControllersWithViews()
+    .SetUpErrors();
 WebApplication app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
