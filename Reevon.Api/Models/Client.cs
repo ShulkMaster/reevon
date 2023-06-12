@@ -27,4 +27,5 @@ public class Client
     public string Card { get; set; } = string.Empty;
     public string Rank { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
+    public string Poligone { get; set; } = string.Empty;
 }

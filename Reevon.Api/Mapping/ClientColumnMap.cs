@@ -7,12 +7,14 @@ public sealed class ClientColumnMap
     public int Index { get; set; }
     public string Name { get; set; } = string.Empty;
 
-    public static ClientColumnMap[] DefaultMap()
+    public static Dictionary<string, int> DefaultMap()
     {
-        return Client.Columns.Select((name, index) => new ClientColumnMap
+        Dictionary<string, int> map = new();
+        for(int index = 0; index < Client.Columns.Length; index++)
         {
-            Index = index,
-            Name = name,
-        }).ToArray();
+            map.Add(Client.Columns[index], index);
+        }
+
+        return map;
     }
 }
