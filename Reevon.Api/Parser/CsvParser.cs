@@ -99,11 +99,11 @@ public class CsvParser
     
     private void SetCard(Client client, ICsvReaderRow row)
     {
-        // Todo add encryption
         int index = _map[Client.CardColumn];
-        client.Card = row[index].Trim();
+        string cardNumber = row[index].Trim();
+        client.Card = cardNumber;
     }
-    
+
     private void SetOtherFields(Client client, ICsvReaderRow row)
     {
         int index = _map[Client.RankColumn];
