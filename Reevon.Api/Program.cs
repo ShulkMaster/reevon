@@ -5,6 +5,16 @@ IServiceCollection services = builder.Services;
 services.SetUpSwagger();
 services.AddControllersWithViews()
     .SetUpErrors();
+services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 WebApplication app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -16,6 +26,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.EnableSwagger();
+app.UseCors();
 
 app.MapControllerRoute(
     name: "default",

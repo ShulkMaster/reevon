@@ -6,6 +6,7 @@ using Reevon.Api.Contracts.Response;
 using Reevon.Api.Models;
 using Reevon.Api.Parser;
 using Reevon.Api.Validation;
+using Newtonsoft.Json;
 
 namespace Reevon.Api.Controllers;
 
@@ -60,14 +61,32 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
 
-        var jsonContent = new
+        using (var streamReader = new StreamReader(form.Document.OpenReadStream()))
         {
-            name = "John Doe",
-            age = 30,
-            separator = form.Separator,
-            key = form.Key,
-            file = form.Document.FileName
-        };
-        return Ok(jsonContent);
+            Parser.CsvParser parser = new Parser.CsvParser(streamReader.BaseStream);
+            ParseResult parseResult = parser.Parse();
+            if (parseResult.Errors.Any())
+            {
+                var fileError = new ApiError
+                {
+                    Code = 400,
+                    Message = "File has errors",
+                };
+                fileError.ValidationErrors.Add("Document", parseResult.Errors);
+                return BadRequest(fileError);
+            }
+
+            string jsonContent = JsonConvert.SerializeObject(parseResult.Clients);
+
+            return Ok(jsonContent);
+        }
     }
+
+    [HttpPost]
+    public IActionResult Csv([FromForm] DocumentParse form)
+    {
+        // TODO: Generate CSV file through XML/JSON 
+        return Ok();
+    }
+    
 }
