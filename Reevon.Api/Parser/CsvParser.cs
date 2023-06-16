@@ -1,7 +1,9 @@
 ﻿using System.Text;
 using CsvParser;
+using Reevon.Api.Contracts.Request;
 using Reevon.Api.Mapping;
 using Reevon.Api.Models;
+using Reevon.Api.System;
 
 namespace Reevon.Api.Parser;
 
@@ -53,7 +55,7 @@ public class CsvParser
         return true;
     }
 
-    public ParseResult Parse()
+    public ParseResult Parse(string key)
     {
         ParseResult result = new();
         if (!HasCorrectColumnCount())
@@ -75,7 +77,7 @@ public class CsvParser
             var client = new Client();
             SetDocument(client, row);
             SetNames(client, row);
-            SetCard(client, row);
+            SetCard(client, row, key);
             SetOtherFields(client, row);
             result.Clients.Add(client);
         } while (_reader.MoveNext());
@@ -97,11 +99,12 @@ public class CsvParser
         client.LastName = row[index].Trim();
     }
     
-    private void SetCard(Client client, ICsvReaderRow row)
+    private void SetCard(Client client, ICsvReaderRow row, string key)
     {
         int index = _map[Client.CardColumn];
         string cardNumber = row[index].Trim();
-        client.Card = cardNumber;
+        string encryptedCardNumber = EncryptionManager.Encrypt(cardNumber, key);
+        client.Card = encryptedCardNumber;
     }
 
     private void SetOtherFields(Client client, ICsvReaderRow row)

@@ -29,7 +29,7 @@ public class DocumentController : ControllerBase
 
         Stream stream = form.Document.OpenReadStream();
         Parser.CsvParser parser = new(stream);
-        ParseResult parseResult = parser.Parse();
+        ParseResult parseResult = parser.Parse(form.Key);
         if (parseResult.Errors.Any())
         {
             var fileError = new ApiError
@@ -65,7 +65,7 @@ public class DocumentController : ControllerBase
 
         Stream stream = form.Document.OpenReadStream();
         var parser = new Parser.CsvParser(stream);
-        ParseResult parseResult = parser.Parse();
+        ParseResult parseResult = parser.Parse(form.Key);
         if (parseResult.Errors.Any())
         {
             var fileError = new ApiError
@@ -99,7 +99,7 @@ public class DocumentController : ControllerBase
         if (fileExtension.Equals(".xml", StringComparison.OrdinalIgnoreCase))
         {
             var parser = new XmlParser(stream); 
-            ParseResult parseResult = parser.Parse();
+            ParseResult parseResult = parser.Parse(form.Key);
             if (parseResult.Errors.Any())
             {
                 var fileError = new ApiError
@@ -117,7 +117,7 @@ public class DocumentController : ControllerBase
         else if (fileExtension.Equals(".json", StringComparison.OrdinalIgnoreCase))
         {
             var parser = new JsonParser(stream);
-            ParseResult parseResult = parser.Parse();
+            ParseResult parseResult = parser.Parse(form.Key);
             if (parseResult.Errors.Any())
             {
                 var fileError = new ApiError

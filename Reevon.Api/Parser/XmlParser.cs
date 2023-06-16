@@ -1,6 +1,7 @@
 ﻿using System.Xml;
 using Reevon.Api.Mapping;
 using Reevon.Api.Models;
+using Reevon.Api.System;
 
 namespace Reevon.Api.Parser
 {
@@ -40,7 +41,7 @@ namespace Reevon.Api.Parser
             return false;
         }
 
-        public ParseResult Parse()
+        public ParseResult Parse(string key)
         {
             ParseResult result = new();
             if (!HasCorrectElementCount())
@@ -60,7 +61,7 @@ namespace Reevon.Api.Parser
                 var client = new Client();
                 ReadDocument(client);
                 ReadNames(client);
-                ReadCard(client);
+                ReadCard(client,key);
                 ReadOtherFields(client);
                 result.Clients.Add(client);
             } while (HasNextElement());
@@ -82,10 +83,12 @@ namespace Reevon.Api.Parser
             client.LastName = _xmlReader.ReadElementContentAsString().Trim();
         }
         
-        private void ReadCard(Client client)
+        private void ReadCard(Client client, string key)
         {
             _xmlReader.ReadToNextSibling("Card");
-            client.Card = _xmlReader.ReadElementContentAsString().Trim();
+            string encryptedCardNumber = _xmlReader.ReadElementContentAsString().Trim();
+            string decryptedCardNumber = EncryptionManager.Decrypt(encryptedCardNumber, key);
+            client.Card = decryptedCardNumber;
         }
 
         private void ReadOtherFields(Client client)

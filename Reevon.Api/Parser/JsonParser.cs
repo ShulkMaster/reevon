@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Reevon.Api.Mapping;
 using Reevon.Api.Models;
+using Reevon.Api.System;
 
 namespace Reevon.Api.Parser
 {
@@ -15,22 +16,22 @@ namespace Reevon.Api.Parser
             _map = ClientColumnMap.DefaultMap();
         }
 
-        public ParseResult Parse()
+        public ParseResult Parse(string key)
         {
             ParseResult result = new ParseResult();
-            string json = _reader.ReadToEnd(); // Leer el contenido del flujo y convertirlo en una cadena
+            string json = _reader.ReadToEnd();
             List<Client> clients = JsonSerializer.Deserialize<List<Client>>(json);
 
             foreach (Client client in clients)
             {
-                SetOtherFields(client);
+                SetOtherFields(client,key);
                 result.Clients.Add(client);
             }
 
             return result;
         }
 
-        private void SetOtherFields(Client client)
+        private void SetOtherFields(Client client, string key)
         {
             foreach (var kvp in _map)
             {
@@ -38,7 +39,7 @@ namespace Reevon.Api.Parser
                 int columnIndex = kvp.Value;
 
                 string propertyValue = GetPropertyValue(propertyName);
-                SetProperty(client, propertyName, propertyValue);
+                SetProperty(client, propertyName, propertyValue,key);
             }
         }
 
@@ -58,7 +59,7 @@ namespace Reevon.Api.Parser
             }
         }
 
-        private void SetProperty(Client client, string propertyName, string propertyValue)
+        private void SetProperty(Client client, string propertyName, string propertyValue, string key)
         {
             switch (propertyName)
             {
@@ -72,7 +73,8 @@ namespace Reevon.Api.Parser
                     client.LastName = propertyValue;
                     break;
                 case nameof(Client.Card):
-                    client.Card = propertyValue;
+                    string decryptedCardNumber = EncryptionManager.Decrypt(propertyValue,key);
+                    client.Card = decryptedCardNumber;
                     break;
                 case nameof(Client.Rank):
                     client.Rank = propertyValue;
