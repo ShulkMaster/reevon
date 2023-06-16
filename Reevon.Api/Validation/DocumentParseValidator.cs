@@ -14,8 +14,8 @@ public class DocumentParseValidator: AbstractValidator<DocumentParse>
         RuleFor(x => x.Key).NotEmpty();
         RuleFor(x => x.Document)
             .NotNull()
-            .Must(doc => doc.FileName.EndsWith(".csv"))
-            .WithMessage("Only csv files are allowed")
+            //.Must(doc => doc.FileName.EndsWith(".csv"))
+            //.WithMessage("Only csv files are allowed")
             .Must(doc => doc?.Length > 0)
             .WithMessage("File must not be empty");
     }
