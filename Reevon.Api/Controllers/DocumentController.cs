@@ -26,7 +26,7 @@ public class DocumentController : ControllerBase
             ApiError error = ApiError.FromValidation(result);
             return BadRequest(error);
         }
-        
+
         Stream stream = form.Document.OpenReadStream();
         Parser.CsvParser parser = new(stream);
         ParseResult parseResult = parser.Parse();
@@ -43,7 +43,7 @@ public class DocumentController : ControllerBase
         string content = SerializeToXml(parseResult.Clients);
         return Content(content, "application/xml");
     }
-    
+
     private static string SerializeToXml(List<Client> clients)
     {
         var serializer = new XmlSerializer(typeof(List<Client>));
@@ -92,30 +92,42 @@ public class DocumentController : ControllerBase
         }
 
         Stream stream = form.Document.OpenReadStream();
-        var parser = new Parser.CsvParser(stream);
-        ParseResult parseResult = parser.Parse();
-        if (parseResult.Errors.Any())
-        {
-            var fileError = new ApiError
-            {
-                Code = 400,
-                Message = "File has errors",
-            };
-            fileError.ValidationErrors.Add("Document", parseResult.Errors);
-            return BadRequest(fileError);
-        }
 
         string contentType;
         string csvContent;
         string fileExtension = Path.GetExtension(form.Document.FileName);
         if (fileExtension.Equals(".xml", StringComparison.OrdinalIgnoreCase))
         {
+            var parser = new XmlParser(stream); 
+            ParseResult parseResult = parser.Parse();
+            if (parseResult.Errors.Any())
+            {
+                var fileError = new ApiError
+                {
+                    Code = 400,
+                    Message = "File has errors",
+                };
+                fileError.ValidationErrors.Add("Document", parseResult.Errors);
+                return BadRequest(fileError);
+            }
             string xmlContent = SerializeToXml(parseResult.Clients);
             csvContent = ConvertXmlToCsv(xmlContent);
             contentType = "text/csv";
         }
         else if (fileExtension.Equals(".json", StringComparison.OrdinalIgnoreCase))
         {
+            var parser = new JsonParser(stream);
+            ParseResult parseResult = parser.Parse();
+            if (parseResult.Errors.Any())
+            {
+                var fileError = new ApiError
+                {
+                    Code = 400,
+                    Message = "File has errors",
+                };
+                fileError.ValidationErrors.Add("Document", parseResult.Errors);
+                return BadRequest(fileError);
+            }
             string jsonContent = JsonSerializer.Serialize(parseResult.Clients);
             csvContent = ConvertJsonToCsv(jsonContent);
             contentType = "text/csv";
@@ -124,7 +136,7 @@ public class DocumentController : ControllerBase
         {
             return BadRequest("Invalid file format. Only XML and JSON files are supported.");
         }
-        
+
         return Content(csvContent, contentType);
     }
 
@@ -134,11 +146,11 @@ public class DocumentController : ControllerBase
         xmlDoc.LoadXml(xmlContent);
 
         var csvBuilder = new StringBuilder();
-        
+
         csvBuilder.AppendLine("Document,Name,LastName,Card,Rank,Phone,Poligone");
-        
+
         XmlNodeList clientNodes = xmlDoc.SelectNodes("//Client");
-        
+
         foreach (XmlNode clientNode in clientNodes)
         {
             string document = clientNode.SelectSingleNode("Document")?.InnerText ?? "";
@@ -148,7 +160,7 @@ public class DocumentController : ControllerBase
             string type = clientNode.SelectSingleNode("Rank")?.InnerText ?? "";
             string phone = clientNode.SelectSingleNode("Phone")?.InnerText ?? "";
             string polygon = clientNode.SelectSingleNode("Polygone")?.InnerText ?? "";
-            
+
             csvBuilder.AppendLine($"{document},{firstName},{lastName},{card},{type},{phone},{polygon}");
         }
 
@@ -160,9 +172,9 @@ public class DocumentController : ControllerBase
         List<Client> clients = JsonSerializer.Deserialize<List<Client>>(jsonContent);
 
         var csvBuilder = new StringBuilder();
-        
+
         csvBuilder.AppendLine("Document,Name,LastName,Card,Rank,Phone,Poligone");
-        
+
         foreach (Client client in clients)
         {
             string document = client.Document ?? "";
@@ -172,7 +184,7 @@ public class DocumentController : ControllerBase
             string rank = client.Rank ?? "";
             string phone = client.Phone ?? "";
             string poligone = client.Poligone ?? "";
-            
+
             csvBuilder.AppendLine($"{document},{name},{lastName},{card},{rank},{phone},{poligone}");
         }
 
