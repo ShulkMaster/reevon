@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Text;
+using System.Xml;
 using Reevon.Api.Mapping;
 using Reevon.Api.Models;
 using Reevon.Api.System;
@@ -10,17 +11,22 @@ namespace Reevon.Api.Parser
     public class XmlParser
     {
         private readonly XmlReader _xmlReader;
+        private readonly XmlDocument _xmlDocument;
         private ColumIndex _map;
+
 
         public XmlParser(Stream ss)
         {
-            _xmlReader = XmlReader.Create(ss);
+            _xmlDocument = new XmlDocument();
+            _xmlDocument.Load(ss);
+
             _map = ClientColumnMap.DefaultMap();
         }
 
         private bool HasCorrectElementCount()
         {
-            return _xmlReader.ReadToFollowing("Client");
+            var clientNode = _xmlDocument.SelectSingleNode("/Clients/Client");
+            return clientNode != null;
         }
 
         private bool HasHeaders()
@@ -37,7 +43,7 @@ namespace Reevon.Api.Parser
         {
             ColumIndex newMap = new();
             if (!HasHeaders()) return true;
-            
+
             return false;
         }
 
@@ -61,7 +67,7 @@ namespace Reevon.Api.Parser
                 var client = new Client();
                 ReadDocument(client);
                 ReadNames(client);
-                ReadCard(client,key);
+                ReadCard(client, key);
                 ReadOtherFields(client);
                 result.Clients.Add(client);
             } while (HasNextElement());
@@ -74,7 +80,7 @@ namespace Reevon.Api.Parser
             _xmlReader.ReadToDescendant("Document");
             client.Document = _xmlReader.ReadElementContentAsString().Trim();
         }
-        
+
         private void ReadNames(Client client)
         {
             _xmlReader.ReadToNextSibling("Name");
@@ -82,7 +88,7 @@ namespace Reevon.Api.Parser
             _xmlReader.ReadToNextSibling("LastName");
             client.LastName = _xmlReader.ReadElementContentAsString().Trim();
         }
-        
+
         private void ReadCard(Client client, string key)
         {
             _xmlReader.ReadToNextSibling("Card");
