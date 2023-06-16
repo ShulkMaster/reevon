@@ -17,7 +17,7 @@ public class KeyController : ControllerBase
             string? id = idElement.GetString();
             string? secret = secretElement.GetString();
 
-            string result = KeyGenerator.GenerateKeyPair(id, secret).ToString();
+            string result = KeyGenerator.GenerateKeyPair(id, secret);
 
             return Ok(result);
         }

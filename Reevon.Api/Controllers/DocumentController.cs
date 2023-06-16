@@ -61,25 +61,21 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
 
-        using (var streamReader = new StreamReader(form.Document.OpenReadStream()))
+        Stream stream = form.Document.OpenReadStream();
+        var parser = new Parser.CsvParser(stream);
+        ParseResult parseResult = parser.Parse();
+        if (parseResult.Errors.Any())
         {
-            Parser.CsvParser parser = new Parser.CsvParser(streamReader.BaseStream);
-            ParseResult parseResult = parser.Parse();
-            if (parseResult.Errors.Any())
+            var fileError = new ApiError
             {
-                var fileError = new ApiError
-                {
-                    Code = 400,
-                    Message = "File has errors",
-                };
-                fileError.ValidationErrors.Add("Document", parseResult.Errors);
-                return BadRequest(fileError);
-            }
-
-            string jsonContent = JsonConvert.SerializeObject(parseResult.Clients);
-
-            return Ok(jsonContent);
+                Code = 400,
+                Message = "File has errors",
+            };
+            fileError.ValidationErrors.Add("Document", parseResult.Errors);
+            return BadRequest(fileError);
         }
+
+        return Ok(parseResult.Clients);
     }
 
     [HttpPost]
