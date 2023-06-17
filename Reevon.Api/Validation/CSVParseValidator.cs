@@ -3,9 +3,9 @@ using Reevon.Api.Contracts.Request;
 
 namespace Reevon.Api.Validation;
 
-public class DocumentParseValidator: AbstractValidator<DocumentParse>
+public class CSVParseValidator: AbstractValidator<DocumentCSVParse>
 {
-    public DocumentParseValidator()
+    public CSVParseValidator()
     {
         RuleFor(x => x.Separator)
             .NotEmpty()
@@ -14,6 +14,8 @@ public class DocumentParseValidator: AbstractValidator<DocumentParse>
         RuleFor(x => x.Key).NotEmpty();
         RuleFor(x => x.Document)
             .NotNull()
+            .Must(doc => doc.FileName.EndsWith(".csv"))
+            .WithMessage("Only csv files are allowed")
             .Must(doc => doc?.Length > 0)
             .WithMessage("File must not be empty");
     }

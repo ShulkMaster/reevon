@@ -17,9 +17,9 @@ namespace Reevon.Api.Controllers;
 public class DocumentController : ControllerBase
 {
     [HttpPost]
-    public IActionResult Xml([FromForm] DocumentParse form)
+    public IActionResult Xml([FromForm] DocumentCSVParse form)
     {
-        var validator = new DocumentParseValidator();
+        var validator = new CSVParseValidator();
         ValidationResult result = validator.Validate(form);
         if (!result.IsValid)
         {
@@ -53,9 +53,9 @@ public class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult Json([FromForm] DocumentParse form)
+    public IActionResult Json([FromForm] DocumentCSVParse form)
     {
-        var validator = new DocumentParseValidator();
+        var validator = new CSVParseValidator();
         ValidationResult result = validator.Validate(form);
         if (!result.IsValid)
         {
@@ -80,10 +80,10 @@ public class DocumentController : ControllerBase
         return Ok(parseResult.Clients);
     }
 
-    [HttpPost]
-    public IActionResult Csv([FromForm] DocumentParse form)
+    [HttpPost("csv/xml")]
+    public IActionResult CsvXml([FromForm] DocumentXMLParse form)
     {
-        var validator = new DocumentParseValidator();
+        var validator = new XMLParseValidator();
         ValidationResult result = validator.Validate(form);
         if (!result.IsValid)
         {
@@ -92,54 +92,41 @@ public class DocumentController : ControllerBase
         }
 
         Stream stream = form.Document.OpenReadStream();
-
-        string contentType;
-        string csvContent;
-        string fileExtension = Path.GetExtension(form.Document.FileName);
-        if (fileExtension.Equals(".xml", StringComparison.OrdinalIgnoreCase))
-        {
-            var parser = new XmlParser(stream); 
-            ParseResult parseResult = parser.Parse(form.Key);
-            if (parseResult.Errors.Any())
-            {
-                var fileError = new ApiError
-                {
-                    Code = 400,
-                    Message = "File has errors",
-                };
-                fileError.ValidationErrors.Add("Document", parseResult.Errors);
-                return BadRequest(fileError);
-            }
-            string xmlContent = SerializeToXml(parseResult.Clients);
-            csvContent = ConvertXmlToCsv(xmlContent);
-            contentType = "text/csv";
-        }
-        else if (fileExtension.Equals(".json", StringComparison.OrdinalIgnoreCase))
-        {
-            var parser = new JsonParser(stream);
-            ParseResult parseResult = parser.Parse(form.Key);
-            if (parseResult.Errors.Any())
-            {
-                var fileError = new ApiError
-                {
-                    Code = 400,
-                    Message = "File has errors",
-                };
-                fileError.ValidationErrors.Add("Document", parseResult.Errors);
-                return BadRequest(fileError);
-            }
-            string jsonContent = JsonSerializer.Serialize(parseResult.Clients);
-            csvContent = ConvertJsonToCsv(jsonContent);
-            contentType = "text/csv";
-        }
-        else
-        {
-            return BadRequest("Invalid file format. Only XML and JSON files are supported.");
-        }
-
-        return Content(csvContent, contentType);
+        
+        string csvContent = ConvertXmlToCsv("stream");
+        
+        // stream -> XMLLibrary () => List<CLients>
+        // list iterarte -> decrypt creadit card prop
+        // csv Library to auto output csv string
+        // return csvContent
+        
+        return Content(csvContent, "text/csv");
     }
 
+    [HttpPost("csv/json")]
+    public IActionResult CsvJson([FromForm] DocumentJSONParse form)
+    {
+        var validator = new JSONParseValidator();
+        ValidationResult result = validator.Validate(form);
+        if (!result.IsValid)
+        {
+            ApiError error = ApiError.FromValidation(result);
+            return BadRequest(error);
+        }
+
+        Stream stream = form.Document.OpenReadStream();
+        
+        string csvContent = ConvertJsonToCsv("stream");
+        
+        // stream -> JSONLibrary () => List<CLients>
+        // list iterarte -> decrypt creadit card prop
+        // csv Library to auto output csv string
+        // return csvContent
+        
+        return Content(csvContent, "text/csv");
+    }
+    
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
     private static string ConvertXmlToCsv(string xmlContent)
     {
         var xmlDoc = new XmlDocument();
@@ -149,7 +136,7 @@ public class DocumentController : ControllerBase
 
         csvBuilder.AppendLine("Document,Name,LastName,Card,Rank,Phone,Poligone");
 
-        XmlNodeList clientNodes = xmlDoc.SelectNodes("//Client");
+        XmlNodeList? clientNodes = xmlDoc.SelectNodes("//Client");
 
         foreach (XmlNode clientNode in clientNodes)
         {
@@ -169,7 +156,7 @@ public class DocumentController : ControllerBase
 
     private static string ConvertJsonToCsv(string jsonContent)
     {
-        List<Client> clients = JsonSerializer.Deserialize<List<Client>>(jsonContent);
+        List<Client>? clients = JsonSerializer.Deserialize<List<Client>>(jsonContent);
 
         var csvBuilder = new StringBuilder();
 
