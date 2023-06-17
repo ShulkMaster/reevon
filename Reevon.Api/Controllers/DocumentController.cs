@@ -130,13 +130,18 @@ public class DocumentController : ControllerBase
                 ApiError error = ApiError.FromString("Could not parse the json");
                 return BadRequest(error);
             }
+
+            foreach (Client client in clients)
+            {
+                client.Card = EncryptionHelper.Decrypt(client.Card, form.Key);
+            }
             
             var parser = new CVSWriter<Client>(clients)
             {
                 Separator = form.Separator[0]
             };
             string dataString = parser.Write();
-            return File(dataString, "text/csv");
+            return Content(dataString, "text/csv");
         }
         catch (Exception e)
         {

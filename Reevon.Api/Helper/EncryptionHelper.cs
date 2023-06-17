@@ -1,16 +1,16 @@
-﻿using System;
-using System.IO;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 public static class EncryptionHelper
 {
+    private static readonly byte[] _fixedIv = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
+
     public static string Encrypt(string plainText, string password)
     {
         using (AesCryptoServiceProvider aesAlg = new AesCryptoServiceProvider())
         {
             aesAlg.Key = GenerateKey(password, aesAlg.KeySize / 8);
-            aesAlg.GenerateIV();
+            aesAlg.IV = _fixedIv;
 
             ICryptoTransform encryptor = aesAlg.CreateEncryptor();
 
@@ -40,17 +40,15 @@ public static class EncryptionHelper
         using (AesCryptoServiceProvider aesAlg = new AesCryptoServiceProvider())
         {
             aesAlg.Key = GenerateKey(password, aesAlg.KeySize / 8);
-            aesAlg.Padding = PaddingMode.PKCS7; // Set the padding mode explicitly
 
-            byte[] iv = new byte[aesAlg.BlockSize / 8];
-            Buffer.BlockCopy(encryptedBytes, 0, iv, 0, iv.Length);
-            aesAlg.IV = iv;
+            aesAlg.IV = _fixedIv;
+            Buffer.BlockCopy(encryptedBytes, 0, aesAlg.IV, 0, aesAlg.IV.Length);
 
             ICryptoTransform decryptor = aesAlg.CreateDecryptor();
 
             byte[] decryptedBytes;
 
-            using (MemoryStream msDecrypt = new MemoryStream(encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length))
+            using (MemoryStream msDecrypt = new MemoryStream(encryptedBytes, aesAlg.IV.Length, encryptedBytes.Length - aesAlg.IV.Length))
             {
                 using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                 {
@@ -66,11 +64,16 @@ public static class EncryptionHelper
         }
     }
 
-    private static byte[] GenerateKey(string password, int keySize)
+    private static byte[] GenerateKey(string password, int keySizeInBytes)
     {
-        using (var derivedBytes = new Rfc2898DeriveBytes(password, 16, 1000))
+        byte[] key = new byte[keySizeInBytes];
+        byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+
+        for (int i = 0; i < keySizeInBytes; i++)
         {
-            return derivedBytes.GetBytes(keySize);
+            key[i] = passwordBytes[i % passwordBytes.Length];
         }
+
+        return key;
     }
 }
