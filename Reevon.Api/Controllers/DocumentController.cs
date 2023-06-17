@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.IO;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Serialization;
@@ -29,7 +30,7 @@ public class DocumentController : ControllerBase
         }
 
         Stream stream = form.Document.OpenReadStream();
-        Parser.CsvParser parser = new(stream);
+        Parser.CsvParser parser = new(stream,form.Separator);
         ParseResult parseResult = parser.Parse(form.Key);
         if (parseResult.Errors.Any())
         {
@@ -66,7 +67,7 @@ public class DocumentController : ControllerBase
         }
 
         Stream stream = form.Document.OpenReadStream();
-        var parser = new Parser.CsvParser(stream);
+        var parser = new Parser.CsvParser(stream,form.Separator);
         ParseResult parseResult = parser.Parse(form.Key);
         if (parseResult.Errors.Any())
         {
@@ -85,26 +86,52 @@ public class DocumentController : ControllerBase
     [HttpPost]
     public IActionResult CsvXml([FromForm] DocumentXMLParse form)
     {
-        var validator = new XMLParseValidator();
-        ValidationResult result = validator.Validate(form);
-        if (!result.IsValid)
+        if (form.Document.ContentType != "application/xml")
         {
-            ApiError error = ApiError.FromValidation(result);
+            ApiError error = ApiError.FromString("The supplied file is not an XML");
             return BadRequest(error);
         }
 
-        Stream stream = form.Document.OpenReadStream();
+        try
+        {
+            var encoding = Encoding.GetEncoding("UTF-16");
+            var streamReader = new StreamReader(form.Document.OpenReadStream(), encoding);
+            var xmlDocument = new XmlDocument();
+            xmlDocument.Load(streamReader);
 
-        string csvContent = ConvertXmlToCsv("stream");
+            var arrayOfClientElement = xmlDocument.DocumentElement;
+            var clientNodes = arrayOfClientElement.GetElementsByTagName("Client");
 
-        // stream -> XMLLibrary () => List<CLients>
-        // list iterarte -> decrypt creadit card prop
-        // csv Library to auto output csv string
-        // return csvContent
+            var clients = new List<Client>();
+            foreach (XmlNode clientNode in clientNodes)
+            {
+                var clientSerializer = new XmlSerializer(typeof(Client));
+                var client = (Client)clientSerializer.Deserialize(new XmlNodeReader(clientNode));
+                clients.Add(client);
+            }
 
-        return Content(csvContent, "text/csv");
+            foreach (Client client in clients)
+            {
+                client.Card = EncryptionHelper.Decrypt(client.Card, form.Key);
+            }
+
+            var parser = new CVSWriter<Client>(clients)
+            {
+                Separator = form.Separator[0]
+            };
+            string dataString = parser.Write();
+
+            return Content(dataString, "text/csv");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            ApiError error = ApiError.FromString("The supplied XML file is not valid");
+            return BadRequest(error);
+        }
     }
 
+    
     [HttpPost]
     public IActionResult CsvJson([FromForm] DocumentJSONParse form)
     {
@@ -141,6 +168,7 @@ public class DocumentController : ControllerBase
                 Separator = form.Separator[0]
             };
             string dataString = parser.Write();
+
             return Content(dataString, "text/csv");
         }
         catch (Exception e)
@@ -150,55 +178,5 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
     }
-
-    private static string ConvertXmlToCsv(string xmlContent)
-    {
-        var xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml(xmlContent);
-
-        var csvBuilder = new StringBuilder();
-
-        csvBuilder.AppendLine("Document,Name,LastName,Card,Rank,Phone,Poligone");
-
-        XmlNodeList? clientNodes = xmlDoc.SelectNodes("//Client");
-
-        foreach (XmlNode clientNode in clientNodes)
-        {
-            string document = clientNode.SelectSingleNode("Document")?.InnerText ?? "";
-            string firstName = clientNode.SelectSingleNode("Name")?.InnerText ?? "";
-            string lastName = clientNode.SelectSingleNode("LastName")?.InnerText ?? "";
-            string card = clientNode.SelectSingleNode("Card")?.InnerText ?? "";
-            string type = clientNode.SelectSingleNode("Rank")?.InnerText ?? "";
-            string phone = clientNode.SelectSingleNode("Phone")?.InnerText ?? "";
-            string polygon = clientNode.SelectSingleNode("Polygone")?.InnerText ?? "";
-
-            csvBuilder.AppendLine($"{document},{firstName},{lastName},{card},{type},{phone},{polygon}");
-        }
-
-        return csvBuilder.ToString();
-    }
-
-    private static string ConvertJsonToCsv(string jsonContent)
-    {
-        List<Client>? clients = JsonSerializer.Deserialize<List<Client>>(jsonContent);
-
-        var csvBuilder = new StringBuilder();
-
-        csvBuilder.AppendLine("Document,Name,LastName,Card,Rank,Phone,Poligone");
-
-        foreach (Client client in clients)
-        {
-            string document = client.Document ?? "";
-            string name = client.Name ?? "";
-            string lastName = client.LastName ?? "";
-            string card = client.Card ?? "";
-            string rank = client.Rank ?? "";
-            string phone = client.Phone ?? "";
-            string poligone = client.Poligone ?? "";
-
-            csvBuilder.AppendLine($"{document},{name},{lastName},{card},{rank},{phone},{poligone}");
-        }
-
-        return csvBuilder.ToString();
-    }
+    
 }

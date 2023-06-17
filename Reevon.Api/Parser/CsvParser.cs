@@ -12,7 +12,7 @@ public class CsvParser
     private readonly CsvReader _reader;
     private ColumIndex _map;
 
-    public CsvParser(Stream ss)
+    public CsvParser(Stream ss,string delimiter)
     {
         _reader = new CsvReader(ss, Encoding.UTF8);
         _map = ClientColumnMap.DefaultMap();
