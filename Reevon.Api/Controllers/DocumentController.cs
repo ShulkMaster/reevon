@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Serialization;
 using FluentValidation.Results;
@@ -80,7 +81,7 @@ public class DocumentController : ControllerBase
         return Ok(parseResult.Clients);
     }
 
-    [HttpPost("csv/xml")]
+    [HttpPost]
     public IActionResult CsvXml([FromForm] DocumentXMLParse form)
     {
         var validator = new XMLParseValidator();
@@ -103,7 +104,7 @@ public class DocumentController : ControllerBase
         return Content(csvContent, "text/csv");
     }
 
-    [HttpPost("csv/json")]
+    [HttpPost]
     public IActionResult CsvJson([FromForm] DocumentJSONParse form)
     {
         var validator = new JSONParseValidator();
@@ -115,18 +116,23 @@ public class DocumentController : ControllerBase
         }
 
         Stream stream = form.Document.OpenReadStream();
-        
-        string csvContent = ConvertJsonToCsv("stream");
-        
-        // stream -> JSONLibrary () => List<CLients>
-        // list iterarte -> decrypt creadit card prop
-        // csv Library to auto output csv string
-        // return csvContent
-        
-        return Content(csvContent, "text/csv");
+        try
+        {
+            var clients = JsonSerializer.Deserialize<List<Client>>(stream, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = false,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            });
+            return Ok(clients);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            ApiError error = ApiError.FromString("The supplied JSON file is not valid");
+            return BadRequest(error);
+        }
     }
-    
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+
     private static string ConvertXmlToCsv(string xmlContent)
     {
         var xmlDoc = new XmlDocument();

@@ -32,4 +32,14 @@ public sealed class ApiError
 
         return error;
     }
+
+    public static ApiError FromString(string error)
+    {
+        var apiError = new ApiError
+        {
+            Code = 400,
+            Message = error,
+        };
+        return apiError;
+    }
 }
