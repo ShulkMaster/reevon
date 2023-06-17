@@ -2,7 +2,6 @@
 using CsvParser;
 using Reevon.Api.Mapping;
 using Reevon.Api.Models;
-using Reevon.Api.System;
 
 namespace Reevon.Api.Parser;
 
@@ -102,7 +101,7 @@ public class CsvParser
     {
         int index = _map[Client.CardColumn];
         string cardNumber = row[index].Trim();
-        string encryptedCardNumber = EncryptionManager.Encrypt(cardNumber, key);
+        string encryptedCardNumber = EncryptionHelper.Encrypt(cardNumber, key);
         client.Card = encryptedCardNumber;
     }
 

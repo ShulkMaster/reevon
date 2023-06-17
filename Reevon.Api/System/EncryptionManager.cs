@@ -46,9 +46,10 @@ namespace Reevon.Api.System
                 Buffer.BlockCopy(encryptedData, 0, iv, 0, aes.IV.Length);
                 aes.IV = iv;
 
+
                 ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
 
-                using (MemoryStream memoryStream = new MemoryStream(encryptedData, aes.IV.Length, encryptedData.Length - aes.IV.Length))
+                using (MemoryStream memoryStream = new MemoryStream(encryptedData))
                 using (CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                 using (StreamReader streamReader = new StreamReader(cryptoStream))
                 {

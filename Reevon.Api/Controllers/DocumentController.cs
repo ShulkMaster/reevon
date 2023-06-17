@@ -1,12 +1,12 @@
 ﻿using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Serialization;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 using Reevon.Api.Contracts.Request;
 using Reevon.Api.Contracts.Response;
+using Reevon.Api.Helper;
 using Reevon.Api.Models;
 using Reevon.Api.Parser;
 using Reevon.Api.Validation;
@@ -41,6 +41,7 @@ public class DocumentController : ControllerBase
             fileError.ValidationErrors.Add("Document", parseResult.Errors);
             return BadRequest(fileError);
         }
+
         string content = SerializeToXml(parseResult.Clients);
         return Content(content, "application/xml");
     }
@@ -93,14 +94,14 @@ public class DocumentController : ControllerBase
         }
 
         Stream stream = form.Document.OpenReadStream();
-        
+
         string csvContent = ConvertXmlToCsv("stream");
-        
+
         // stream -> XMLLibrary () => List<CLients>
         // list iterarte -> decrypt creadit card prop
         // csv Library to auto output csv string
         // return csvContent
-        
+
         return Content(csvContent, "text/csv");
     }
 
@@ -123,7 +124,19 @@ public class DocumentController : ControllerBase
                 PropertyNameCaseInsensitive = false,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             });
-            return Ok(clients);
+
+            if (clients is null)
+            {
+                ApiError error = ApiError.FromString("Could not parse the json");
+                return BadRequest(error);
+            }
+            
+            var parser = new CVSWriter<Client>(clients)
+            {
+                Separator = form.Separator[0]
+            };
+            string dataString = parser.Write();
+            return File(dataString, "text/csv");
         }
         catch (Exception e)
         {
