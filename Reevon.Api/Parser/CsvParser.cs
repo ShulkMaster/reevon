@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
+using CsvHelper.Configuration;
 using CsvParser;
 using Reevon.Api.Mapping;
 using Reevon.Api.Models;
@@ -11,10 +13,12 @@ public class CsvParser
 {
     private readonly CsvReader _reader;
     private ColumIndex _map;
-
-    public CsvParser(Stream ss,string delimiter)
+    
+    public CsvParser(Stream ss, string delimiter)
     {
-        _reader = new CsvReader(ss, Encoding.UTF8);
+        var config = new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = delimiter };
+
+        _reader = new CsvReader(ss, Encoding.UTF8); // config va aqui como tercer parametro para agregar el dolimitador pero no funciona no entiendo porque
         _map = ClientColumnMap.DefaultMap();
     }
 
