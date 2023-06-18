@@ -108,6 +108,7 @@ public class DocumentController : ControllerBase
             var descendants = xmlDocument.Descendants("Client");
             foreach (XElement clientElement in descendants)
             {
+                string card = clientElement.Element("Card")?.Value ?? "";
                 var client = new Client
                 {
                     Document = clientElement.Element("Document")?.Value ?? "",
@@ -116,6 +117,7 @@ public class DocumentController : ControllerBase
                     Rank = clientElement.Element("Rank")?.Value ?? "",
                     Phone = clientElement.Element("Phone")?.Value ?? "",
                     Poligone = clientElement.Element("Poligone")?.Value ?? "",
+                    Card = EncryptionHelper.Decrypt(card, form.Key),
                 };
                 clients.Add(client);
             }
