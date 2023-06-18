@@ -36,8 +36,12 @@ public class CVSWriter<T> where T : class
         {
             foreach(PropertyInfo prop in props)
             {
-                string values = prop.GetValue(element)?.ToString() ?? "";
-                _sb.Append(values);
+                string value = prop.GetValue(element)?.ToString() ?? "";
+                if(value.Contains(Separator))
+                {
+                    value = $"\"{value}\"";
+                }
+                _sb.Append(value);
                 _sb.Append(Separator);
             }
             _sb.Pop();
