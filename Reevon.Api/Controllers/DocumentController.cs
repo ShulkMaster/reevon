@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using FluentValidation.Results;
@@ -48,10 +50,16 @@ public class DocumentController : ControllerBase
 
     private static string SerializeToXml(List<Client> clients)
     {
+        var settings = new XmlWriterSettings
+        {
+            Indent = true,
+            Encoding = Encoding.UTF8,
+        };
+        using var mmStream = new MemoryStream();
+        using var xmlWriter = XmlWriter.Create(mmStream, settings);
         var serializer = new XmlSerializer(typeof(List<Client>));
-        using var writer = new StringWriter();
-        serializer.Serialize(writer, clients);
-        return writer.ToString();
+        serializer.Serialize(xmlWriter, clients);
+        return Encoding.UTF8.GetString(mmStream.ToArray());
     }
 
     [HttpPost]
@@ -96,7 +104,7 @@ public class DocumentController : ControllerBase
 
         try
         {
-            var xmlDocument = new XDocument(form.Document.OpenReadStream());
+            var xmlDocument = XDocument.Load(form.Document.OpenReadStream());
             var descendants = xmlDocument.Descendants("Client");
             foreach (XElement clientElement in descendants)
             {
