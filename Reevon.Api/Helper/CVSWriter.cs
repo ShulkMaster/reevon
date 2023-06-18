@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text;
+using Reevon.Api.Extension;
 
 namespace Reevon.Api.Helper;
 
@@ -16,21 +17,21 @@ public class CVSWriter<T> where T : class
         _data = data;
     }
 
-    private void WriteHeader()
+    private void WriteHeader(PropertyInfo[] props)
     {
-        var props = typeof(T).GetProperties();
         foreach (PropertyInfo prop in props)
         {
             _sb.Append(prop.Name);
             _sb.Append(Separator);
         }
+        _sb.Pop();
         _sb.AppendLine();
     }
 
     public string Write()
     {
         var props = typeof(T).GetProperties();
-        WriteHeader();
+        WriteHeader(props);
         foreach (T element in _data)
         {
             foreach(PropertyInfo prop in props)
@@ -39,6 +40,7 @@ public class CVSWriter<T> where T : class
                 _sb.Append(values);
                 _sb.Append(Separator);
             }
+            _sb.Pop();
             _sb.AppendLine();
         }
         return _sb.ToString();
