@@ -1,6 +1,5 @@
-﻿using System.Text;
-using System.Text.Json;
-using System.Xml;
+﻿using System.Text.Json;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +19,6 @@ public class DocumentController : ControllerBase
     [HttpPost]
     public IActionResult Xml([FromForm] DocumentCSVParse form)
     {
-        
         var validator = new CSVParseValidator();
         ValidationResult result = validator.Validate(form);
         if (!result.IsValid)
@@ -29,8 +27,9 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
 
+        char separator = form.Separator[0];
         Stream stream = form.Document.OpenReadStream();
-        Parser.CsvParser parser = new(stream,form.Separator);
+        Parser.CsvParser parser = new(stream, separator);
         ParseResult parseResult = parser.Parse(form.Key);
         if (parseResult.Errors.Any())
         {
@@ -66,8 +65,9 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
 
+        char separator = form.Separator[0];
         Stream stream = form.Document.OpenReadStream();
-        var parser = new Parser.CsvParser(stream,form.Separator);
+        var parser = new Parser.CsvParser(stream, separator);
         ParseResult parseResult = parser.Parse(form.Key);
         if (parseResult.Errors.Any())
         {
@@ -92,27 +92,24 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
 
+        var clients = new List<Client>();
+
         try
         {
-            var encoding = Encoding.GetEncoding("UTF-16");
-            var streamReader = new StreamReader(form.Document.OpenReadStream(), encoding);
-            var xmlDocument = new XmlDocument();
-            xmlDocument.Load(streamReader);
-
-            var arrayOfClientElement = xmlDocument.DocumentElement;
-            var clientNodes = arrayOfClientElement.GetElementsByTagName("Client");
-
-            var clients = new List<Client>();
-            foreach (XmlNode clientNode in clientNodes)
+            var xmlDocument = new XDocument(form.Document.OpenReadStream());
+            var descendants = xmlDocument.Descendants("Client");
+            foreach (XElement clientElement in descendants)
             {
-                var clientSerializer = new XmlSerializer(typeof(Client));
-                var client = (Client)clientSerializer.Deserialize(new XmlNodeReader(clientNode));
+                var client = new Client
+                {
+                    Document = clientElement.Element("Document")?.Value ?? "",
+                    Name = clientElement.Element("Name")?.Value ?? "",
+                    LastName = clientElement.Element("LastName")?.Value ?? "",
+                    Rank = clientElement.Element("Rank")?.Value ?? "",
+                    Phone = clientElement.Element("Phone")?.Value ?? "",
+                    Poligone = clientElement.Element("Poligone")?.Value ?? "",
+                };
                 clients.Add(client);
-            }
-
-            foreach (Client client in clients)
-            {
-                client.Card = EncryptionHelper.Decrypt(client.Card, form.Key);
             }
 
             var parser = new CVSWriter<Client>(clients)
@@ -131,7 +128,7 @@ public class DocumentController : ControllerBase
         }
     }
 
-    
+
     [HttpPost]
     public IActionResult CsvJson([FromForm] DocumentJSONParse form)
     {
@@ -162,7 +159,7 @@ public class DocumentController : ControllerBase
             {
                 client.Card = EncryptionHelper.Decrypt(client.Card, form.Key);
             }
-            
+
             var parser = new CVSWriter<Client>(clients)
             {
                 Separator = form.Separator[0]
@@ -178,5 +175,4 @@ public class DocumentController : ControllerBase
             return BadRequest(error);
         }
     }
-    
 }
