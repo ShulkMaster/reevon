@@ -94,11 +94,6 @@ public class DocumentController : ControllerBase
     [HttpPost]
     public IActionResult CsvXml([FromForm] DocumentXMLParse form)
     {
-        if (form.Document.ContentType != "application/xml")
-        {
-            ApiError error = ApiError.FromString("The supplied file is not an XML");
-            return BadRequest(error);
-        }
 
         var clients = new List<Client>();
 
